@@ -168,25 +168,25 @@ fn main() {
             total += solve(x, y, &board, word.as_slice(), &mut map);
         }
     }
-    for y in 0..board.len() {
-        for x in 0..board[y].len() {
-            if let Some(&c) = map.get(&(x, y)) {
-                assert_eq!(board[y][x], b'X');
-                out!("{c}");
-            } else {
-                out!(".");
-            }
-        }
-        outln!();
-    }
-    outln!();
+    // for y in 0..board.len() {
+    //     for x in 0..board[y].len() {
+    //         if let Some(&c) = map.get(&(x, y)) {
+    //             assert_eq!(board[y][x], b'X');
+    //             out!("{c}");
+    //         } else {
+    //             out!(".");
+    //         }
+    //     }
+    //     outln!();
+    // }
+    // outln!();
 
-    for y in 0..board.len() {
-        for x in 0..board[y].len() {
-            out!("{}", board[y][x] as char);
-        }
-        outln!();
-    }
+    // for y in 0..board.len() {
+    //     for x in 0..board[y].len() {
+    //         out!("{}", board[y][x] as char);
+    //     }
+    //     outln!();
+    // }
 
     outln!("{total}");
 }

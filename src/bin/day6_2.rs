@@ -148,97 +148,142 @@ fn init() {
     unsafe { LINE_ITER.write(state.line_buffer.split_whitespace()) };
 }
 
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+enum Dir {
+    Up,
+    Right,
+    Down,
+    Left,
+}
+use Dir::*;
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+enum Element {
+    Empty,
+    Visited,
+    Occupied,
+}
+
 fn main() {
     init();
-    let mut board: Vec<Vec<u8>> = Vec::new();
+    let mut board = Vec::new();
     while let Some(line) = readllq() {
         board.push(line.into_bytes());
     }
-    board.push((0..board[0].len()).map(|_| b'.').collect());
-    board.push((0..board[0].len()).map(|_| b'.').collect());
-    for i in 0..board.len() {
-        board[i].push(b'.');
-        board[i].push(b'.');
-    }
-
-    // ---> x
-    // |
-    // |
-    // V
-    // y    true
-
-    let mut xl: Vec<Vec<_>> = board
-        .iter()
-        .map(|row| row.iter().map(|_| false).collect())
-        .collect();
-    let mut xr: Vec<Vec<_>> = board
-        .iter()
-        .map(|row| row.iter().map(|_| false).collect())
-        .collect();
-    let mut draw: Vec<Vec<_>> = board
-        .iter()
-        .map(|row| row.iter().map(|_| false).collect())
-        .collect();
-    let word = b"MAS";
-
-    for y0 in 0..board.len() {
-        for x0 in 0..board[y0].len() {
-            for (dx, dy, f) in [
-                (1, 1, true),
-                (usize::MAX, usize::MAX, true),
-                (usize::MAX, 1, false),
-                (1, usize::MAX, false),
-            ] {
-                let mut x = x0;
-                let mut y = y0;
-                let mut ok = true;
-                for i in 0..word.len() {
-                    let Some(&e) = board.get(y).and_then(|row| row.get(x)) else {
-                        ok = false;
-                        break;
-                    };
-                    if e != word[i] {
-                        ok = false;
-                        break;
-                    }
-                    x = x.wrapping_add(dx);
-                    y = y.wrapping_add(dy);
-                }
-                if ok {
-                    let xx = if f { &mut xl } else { &mut xr };
-                    let mut x = x0;
-                    let mut y = y0;
-                    for i in 0..word.len() {
-                        draw[y][x] = true;
-                        x = x.wrapping_add(dx);
-                        y = y.wrapping_add(dy);
-                    }
-
-                    let x = x0.wrapping_add(dx);
-                    let y = y0.wrapping_add(dy);
-                    xx[y][x] = true;
-                }
+    let n = board.len();
+    let m = board[0].len();
+    let mut startx = 0;
+    let mut starty = 0;
+    for y in 0..n {
+        for x in 0..m {
+            if board[y][x] == b'^' {
+                startx = x;
+                starty = y;
             }
         }
     }
-    // for y in 0..board.len() {
-    //     for x in 0..board[0].len() {
-    //         if xl[y][x]&&xr[y][x] {
-    //             out!("a");
+    let total = solve(startx, starty, &mut board);
 
-    //         } else if draw[y][x] {
-    //             out!("{}", board[y][x] as char);
-    //         } else {
-    //             out!(".");
-    //         }
-    //     }
-    //     outln!();
-    // }
-    let mut total = 0;
-    for y in 0..xl.len() {
-        for x in 0..xl[0].len() {
-            total += (xl[y][x] && xr[y][x]) as usize;
+    outln!("{total}");
+}
+
+#[derive(Copy, Clone, Eq, PartialEq)]
+struct State {
+    x: usize,
+    y: usize,
+    dir: Dir,
+}
+impl State {
+    fn step(self, board: &[Vec<u8>]) -> Option<Self> {
+        let n = board.len();
+        let m = board[0].len();
+        let State {
+            mut x,
+            mut y,
+            mut dir,
+        } = self;
+        #[rustfmt::skip]
+        let (dx, dy, next) = match dir {
+            Up =>    (               0, (-1i32) as usize, Right),
+            Right => (               1,                0, Down),
+            Down =>  (               0,                1, Left),
+            Left =>  ((-1i32) as usize,                0, Up),
+        };
+
+        let xn = x.wrapping_add(dx);
+        let yn = y.wrapping_add(dy);
+        if let Some(&e) = board.get(yn).and_then(|row| row.get(xn)) {
+            if e == b'#' {
+                dir = next;
+            } else {
+                (x, y) = (xn, yn);
+            }
+        } else {
+            (x, y) = (xn, yn);
+        }
+
+        if y < n && x < m {
+            Some(State { x, y, dir })
+        } else {
+            None
         }
     }
-    outln!("{total}");
+}
+
+fn check_cycle(state: State, board: &[Vec<u8>]) -> bool {
+    let mut state1 = state;
+    let mut state2 = state;
+    loop {
+        state1 = match state1.step(board) {
+            Some(x) => x,
+            None => return false,
+        };
+        state2 = match state2.step(board) {
+            Some(x) => x,
+            None => return false,
+        };
+        state2 = match state2.step(board) {
+            Some(x) => x,
+            None => return false,
+        };
+        if state1 == state2 {
+            return true;
+        }
+    }
+}
+
+fn solve(startx: usize, starty: usize, board: &mut [Vec<u8>]) -> usize {
+    let n = board.len();
+    let m = board[0].len();
+    let mut visited = vec![vec![false; m]; n];
+
+    // --> x
+    // |
+    // v
+    //
+    // y
+    let mut state = State {
+        x: startx,
+        y: starty,
+        dir: Up,
+    };
+
+    visited[starty][startx] = true;
+
+    let mut total = 0;
+    loop {
+        visited[state.y][state.x] = true;
+        let Some(sn) = state.step(board) else {
+            break;
+        };
+        if board[sn.y][sn.x] == b'.' && !visited[sn.y][sn.x] {
+            board[sn.y][sn.x] = b'#';
+            total += check_cycle(state, &*board) as usize;
+            board[sn.y][sn.x] = b'.';
+        } else {
+        }
+
+        state = sn
+    }
+    total
 }

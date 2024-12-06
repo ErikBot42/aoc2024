@@ -150,95 +150,43 @@ fn init() {
 
 fn main() {
     init();
-    let mut board: Vec<Vec<u8>> = Vec::new();
+
+    // x|y => x before y
+
+    // (x,y)
+    let mut rules = HashSet::new();
+
     while let Some(line) = readllq() {
-        board.push(line.into_bytes());
-    }
-    board.push((0..board[0].len()).map(|_| b'.').collect());
-    board.push((0..board[0].len()).map(|_| b'.').collect());
-    for i in 0..board.len() {
-        board[i].push(b'.');
-        board[i].push(b'.');
+        let mut it = line.split('|');
+        let x: i64 = str::parse(it.next().unwrap()).unwrap();
+        let y: i64 = str::parse(it.next().unwrap()).unwrap();
+        rules.insert((x, y));
     }
 
-    // ---> x
-    // |
-    // |
-    // V
-    // y    true
+    let mut sum = 0;
+    while let Some(line) = readllq() {
+        let d: Vec<i64> = line.split(',').map(|x| str::parse(x).unwrap()).collect();
+        let n = d.len();
 
-    let mut xl: Vec<Vec<_>> = board
-        .iter()
-        .map(|row| row.iter().map(|_| false).collect())
-        .collect();
-    let mut xr: Vec<Vec<_>> = board
-        .iter()
-        .map(|row| row.iter().map(|_| false).collect())
-        .collect();
-    let mut draw: Vec<Vec<_>> = board
-        .iter()
-        .map(|row| row.iter().map(|_| false).collect())
-        .collect();
-    let word = b"MAS";
-
-    for y0 in 0..board.len() {
-        for x0 in 0..board[y0].len() {
-            for (dx, dy, f) in [
-                (1, 1, true),
-                (usize::MAX, usize::MAX, true),
-                (usize::MAX, 1, false),
-                (1, usize::MAX, false),
-            ] {
-                let mut x = x0;
-                let mut y = y0;
-                let mut ok = true;
-                for i in 0..word.len() {
-                    let Some(&e) = board.get(y).and_then(|row| row.get(x)) else {
-                        ok = false;
-                        break;
-                    };
-                    if e != word[i] {
-                        ok = false;
-                        break;
-                    }
-                    x = x.wrapping_add(dx);
-                    y = y.wrapping_add(dy);
-                }
-                if ok {
-                    let xx = if f { &mut xl } else { &mut xr };
-                    let mut x = x0;
-                    let mut y = y0;
-                    for i in 0..word.len() {
-                        draw[y][x] = true;
-                        x = x.wrapping_add(dx);
-                        y = y.wrapping_add(dy);
-                    }
-
-                    let x = x0.wrapping_add(dx);
-                    let y = y0.wrapping_add(dy);
-                    xx[y][x] = true;
-                }
-            }
+        let valid = check_valid(&d, &rules);
+        if valid {
+            assert_eq!(d.len() % 2, 1);
+            let middle_idx = n / 2;
+            let m = d[middle_idx];
+            sum += m;
         }
     }
-    // for y in 0..board.len() {
-    //     for x in 0..board[0].len() {
-    //         if xl[y][x]&&xr[y][x] {
-    //             out!("a");
+    outln!("{sum}");
+}
 
-    //         } else if draw[y][x] {
-    //             out!("{}", board[y][x] as char);
-    //         } else {
-    //             out!(".");
-    //         }
-    //     }
-    //     outln!();
-    // }
-    let mut total = 0;
-    for y in 0..xl.len() {
-        for x in 0..xl[0].len() {
-            total += (xl[y][x] && xr[y][x]) as usize;
+fn check_valid(d: &[i64], rules: &HashSet<(i64, i64)>) -> bool {
+    let mut valid = true;
+    for w in d.windows(2) {
+        let x = w[0];
+        let y = w[1];
+        if rules.contains(&(y, x)) {
+            valid = false;
         }
     }
-    outln!("{total}");
+    valid
 }

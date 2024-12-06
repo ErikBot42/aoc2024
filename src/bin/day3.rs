@@ -226,26 +226,4 @@ fn main() {
         sum += n1 * n2
     }
     outln!("{sum}");
-
-    // for c in s.chars() {
-    //     match c {
-    //         'm' => state = M,
-    //         'u' if state == M => state = U,
-    //         'u' => state = Start,
-    //         'l' if state == U => state = L,
-    //         'l' => state = Start,
-    //         '(' if state == L => {
-    //             state = Open;
-    //             n1.clear()
-    //         }
-    //         '(' => state = Start,
-    //         '0'..'9' if state == N1 => {
-    //             n1.push(c);
-    //             n2.clear()
-    //         }
-    //         _ => todo!(),
-    //     }
-    // }
-
-    // (.*mul(<number>,<number>).*)*
 }
