@@ -13,3 +13,5 @@
 ./target/release/day6_2 < src/bin/in6.txt
 ./target/release/day7 < src/bin/in7.txt
 ./target/release/day7_2 < src/bin/in7.txt
+./target/release/day8 < src/bin/in8.txt
+./target/release/day8_2 < src/bin/in8.txt
